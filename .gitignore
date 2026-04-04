@@ -1,0 +1,4 @@
+# Credentials — never commit these
+.env
+.env.local
+.mcp.json

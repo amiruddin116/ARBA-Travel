@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "arba-warehouse": {
+      "command": "npx",
+      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "env": {
+        "MYSQL_HOST": "",
+        "MYSQL_PORT": "3306",
+        "MYSQL_DATABASE": "",
+        "MYSQL_USER": "",
+        "MYSQL_PASSWORD": ""
+      }
+    }
+  }
+}
