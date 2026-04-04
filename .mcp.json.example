@@ -6,9 +6,9 @@
       "env": {
         "MYSQL_HOST": "",
         "MYSQL_PORT": "3306",
-        "MYSQL_DATABASE": "",
+        "MYSQL_DB": "",
         "MYSQL_USER": "",
-        "MYSQL_PASSWORD": ""
+        "MYSQL_PASS": ""
       }
     }
   }

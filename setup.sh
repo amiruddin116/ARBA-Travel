@@ -44,9 +44,9 @@ if [ ! -f "$MCP_FILE" ]; then
       "env": {
         "MYSQL_HOST": "crm.arbatravel.com",
         "MYSQL_PORT": "3306",
-        "MYSQL_DATABASE": "attcrm",
+        "MYSQL_DB": "attcrm",
         "MYSQL_USER": "arbatravel",
-        "MYSQL_PASSWORD": "Halaltourism2015"
+        "MYSQL_PASS": "Halaltourism2015"
       }
     }
   }
