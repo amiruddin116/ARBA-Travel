@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS leads (
   -- Dimensions for filtering
   destinasi     TEXT,                        -- travel destination
   product_type  TEXT,                        -- package / product type
-  tier          TEXT,                        -- customer tier (reserved; no source yet)
+  tier          TEXT,                        -- airline/service level from CRM 'level' column (e.g. Batik Air, Emirates)
 
   -- Attribution — ad_id from CRM is sole source of truth for channel
   channel       TEXT,                        -- mapped: 'google_ads' | 'meta' | 'tiktok' | 'organic' | 'unattributed'
