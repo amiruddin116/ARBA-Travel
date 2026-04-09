@@ -1,40 +1,62 @@
 # ARBA-Travel
 
-A travel booking web application built with Next.js and PostgreSQL.
+A marketing performance dashboard for ARBA Travel, built with Next.js and PostgreSQL.
 
 ## Stack
 - **Frontend/Backend:** Next.js 14+ (App Router), TypeScript (strict mode)
-- **Database:** PostgreSQL
-- **Styling:** TBD (Tailwind CSS recommended)
-- **Auth:** TBD (NextAuth.js recommended)
+- **Database:** PostgreSQL (Neon)
+- **CRM source:** MySQL at crm.arbatravel.com (requires VPN — sync via local script)
+- **Styling:** Tailwind CSS v4
+- **Auth:** NextAuth.js v5 (Credentials provider)
 
 ## Project Structure
 ```
 src/
-├── app/              # Next.js App Router pages & API routes
-│   ├── (auth)/       # Auth-related pages
-│   ├── api/          # API route handlers
-│   └── ...           # Feature pages
-├── components/       # Reusable React components
-│   ├── ui/           # Generic UI primitives
-│   └── ...           # Feature components
-├── lib/              # Shared utilities and helpers
-├── db/               # Database client, queries, migrations
-│   ├── schema.sql    # Table definitions
-│   ├── migrations/   # Migration files
-│   └── queries/      # Typed query functions
-└── types/            # Shared TypeScript types
+├── app/
+│   ├── (auth)/login/         # Login page
+│   ├── (dashboard)/          # Main dashboard
+│   └── api/
+│       ├── auth/             # NextAuth route
+│       ├── kpis/             # KPI data endpoint
+│       ├── filters/          # Filter dimension values
+│       └── sync/             # Platform sync routes (GET+POST)
+├── components/
+│   ├── charts/               # Recharts wrappers
+│   └── dashboard/            # KPI cards, filters
+├── db/
+│   ├── schema.sql            # PostgreSQL table definitions
+│   ├── schema.ts             # Drizzle ORM schema
+│   └── queries/
+│       └── kpi-metrics.ts    # CPL, CPP, CR%, Avg Pax queries
+├── integrations/
+│   ├── arba-crm/             # MySQL CRM sync
+│   ├── google-ads/           # Google Ads connector
+│   ├── meta/                 # Meta Ads connector
+│   ├── tiktok/               # TikTok Ads connector
+│   └── search-console/       # Google Search Console connector
+├── lib/
+│   ├── db.ts                 # Neon PostgreSQL client
+│   ├── crm-db.ts             # MySQL CRM client
+│   ├── auth.ts               # NextAuth config
+│   ├── channel-map.ts        # ad_id → channel mapping
+│   └── cron-secret.ts        # Cron auth helper
+└── types/
+    └── metrics.ts            # KpiFilters, LeadKpis, etc.
+scripts/
+└── sync-crm.ts               # Standalone CRM sync (run locally with VPN)
 ```
 
 ## Commands
-> Update these after running `npx create-next-app`
 
 ```bash
-npm run dev       # Start development server
-npm run build     # Production build
-npm run start     # Start production server
-npm run lint      # Run ESLint
-npm test          # Run tests
+npm run dev            # Start development server
+npm run build          # Production build
+npm run start          # Start production server
+npm run lint           # Run ESLint
+npm run db:push        # Push schema to Neon via Drizzle
+npm run db:studio      # Open Drizzle Studio
+npm run sync:crm       # Incremental CRM sync (VPN required)
+npm run sync:crm:full  # Full CRM re-sync (VPN required)
 ```
 
 ## Code Style
@@ -45,10 +67,29 @@ npm test          # Run tests
 - Handle all errors explicitly — no silent catches
 
 ## Database Conventions
-- Table names: `snake_case`, plural (e.g. `bookings`, `travel_packages`)
+- Table names: `snake_case`, plural (e.g. `leads`, `ad_metrics`)
 - Primary keys: UUID (`gen_random_uuid()`)
 - Timestamps: `created_at`, `updated_at` on every table
 - All queries in `src/db/queries/` as typed functions — no raw SQL in components or API routes
+
+## Key Business Rules
+- **Pax count** = `adult + child + child_no_bed` (infant excluded)
+- **Closed lead** = CRM Status IN ('Modified', 'Payment', 'Closed')
+- **Deduplication** = by normalized phone number (`dedup_key`); first occurrence kept, duplicates marked `is_duplicate = TRUE` and excluded from KPI counts
+- **Channel attribution** = mapped from CRM `ad_id` field via `src/lib/channel-map.ts`
+- **KPIs**: CPL = spend / leads · CPP = spend / closed_pax · CR% = closed/leads × 100 · Avg Pax = closed_pax / closed_leads
+
+## CRM Sync Setup (local machine)
+Phase 1: Local machine with VPN
+1. Copy `.env.example` → `.env.local`, fill in `DATABASE_URL` and `CRM_DATABASE_URL`
+2. Activate VPN (required to reach crm.arbatravel.com:3306)
+3. Run full sync once: `npm run sync:crm:full`
+4. Schedule nightly at midnight:
+   - **macOS**: `sudo pmset repeat wakeorpoweron MTWRFSU 23:58:00`
+     then `crontab -e` → `0 0 * * * cd /path/to/arba-travel && npm run sync:crm >> /tmp/arba-crm-sync.log 2>&1`
+   - **Windows**: Task Scheduler → "Wake the computer to run this task"
+
+Phase 2: Move `scripts/sync-crm.ts` + `.env.local` to a VPS with OpenVPN — no code changes needed.
 
 ## Security Rules
 - Never commit `.env` or `.env.local`
