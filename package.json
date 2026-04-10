@@ -11,7 +11,8 @@
     "db:studio": "drizzle-kit studio",
     "sync:crm": "dotenv-cli -e .env.local -- tsx scripts/sync-crm.ts",
     "sync:crm:full": "dotenv-cli -e .env.local -- tsx scripts/sync-crm.ts --full",
-    "rededup": "dotenv-cli -e .env.local -- tsx scripts/redeup.ts"
+    "rededup": "dotenv-cli -e .env.local -- tsx scripts/redeup.ts",
+    "setup:db": "dotenv-cli -e .env.local -- tsx scripts/setup-db.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.1",
