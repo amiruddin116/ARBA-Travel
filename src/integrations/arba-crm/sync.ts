@@ -57,6 +57,7 @@ async function upsertLeads(leads: LeadRow[]): Promise<number> {
         pax_count     = EXCLUDED.pax_count,
         destinasi     = EXCLUDED.destinasi,
         product_type  = EXCLUDED.product_type,
+        tier          = EXCLUDED.tier,
         channel       = EXCLUDED.channel,
         ad_id         = EXCLUDED.ad_id,
         is_attributed = EXCLUDED.is_attributed,
@@ -72,43 +73,136 @@ async function upsertLeads(leads: LeadRow[]): Promise<number> {
 }
 
 /**
- * After upserting, mark all but the earliest record per dedup_key as duplicates.
+ * Deduplication rules (in priority order):
  *
- * "Earliest" = lowest lead_date, then lowest external_id as tie-breaker.
+ * 1. No phone (dedup_key = '')          → is_duplicate = TRUE (not a real lead)
+ * 2. Status = 'Cancelled'               → is_duplicate = TRUE
+ * 3. Per (phone + destinasi + product_type) group:
+ *    - If any closed record exists → mark all open records in that group as duplicate
+ *    - Within closed records → keep earliest by lead_date (external_id tiebreaker); rest = duplicate
+ * 4. Per phone across remaining open records:
+ *    - Keep earliest by lead_date; rest = duplicate
+ *
+ * After dedup:
+ * 5. Update lead_date on all canonical records to the MIN lead_date for that phone
+ *    (so lead_date = first ever inquiry, even if a later closed record is the canonical one)
+ *
+ * KPI implications:
+ * - Unique leads (CPL denominator) = COUNT(DISTINCT dedup_key) WHERE NOT is_duplicate
+ * - Closed leads / pax             = COUNT/SUM WHERE is_closed AND NOT is_duplicate
+ *   (same person with 2 different trips = 2 closed lead rows, 1 unique lead person)
  */
 async function markDuplicates(): Promise<void> {
+  // 1. No phone
+  await sql`
+    UPDATE leads SET is_duplicate = TRUE, updated_at = NOW()
+    WHERE (dedup_key = '' OR dedup_key IS NULL)
+      AND is_duplicate = FALSE
+  `;
+
+  // 2. Cancelled status
+  await sql`
+    UPDATE leads SET is_duplicate = TRUE, updated_at = NOW()
+    WHERE LOWER(status) = 'cancelled'
+      AND is_duplicate = FALSE
+  `;
+
+  // 3a. Within each (phone + destinasi + product_type): if closed record exists,
+  //     mark all open records in that group as duplicate
   await sql`
     UPDATE leads l
-    SET is_duplicate = TRUE,
-        updated_at   = NOW()
-    WHERE is_duplicate = FALSE
+    SET is_duplicate = TRUE, updated_at = NOW()
+    WHERE l.is_duplicate = FALSE
+      AND NOT l.is_closed
+      AND l.dedup_key != ''
       AND EXISTS (
-        SELECT 1 FROM leads earlier
-        WHERE earlier.dedup_key  = l.dedup_key
-          AND earlier.dedup_key != ''
-          AND (
-            earlier.lead_date < l.lead_date
-            OR (earlier.lead_date = l.lead_date AND earlier.external_id < l.external_id)
-          )
-          AND earlier.id != l.id
+        SELECT 1 FROM leads c
+        WHERE c.dedup_key                       = l.dedup_key
+          AND COALESCE(c.destinasi, '')          = COALESCE(l.destinasi, '')
+          AND COALESCE(c.product_type, '')       = COALESCE(l.product_type, '')
+          AND c.is_closed                        = TRUE
+          AND c.dedup_key                       != ''
       )
   `;
 
-  // Reset any records that were previously marked duplicate but are now the earliest
+  // 3b. Within closed records for same (phone + destinasi + product_type),
+  //     keep the earliest; mark the rest as duplicate
   await sql`
     UPDATE leads l
-    SET is_duplicate = FALSE,
-        updated_at   = NOW()
-    WHERE is_duplicate = TRUE
-      AND NOT EXISTS (
-        SELECT 1 FROM leads earlier
-        WHERE earlier.dedup_key  = l.dedup_key
-          AND earlier.dedup_key != ''
+    SET is_duplicate = TRUE, updated_at = NOW()
+    WHERE l.is_duplicate = FALSE
+      AND l.is_closed
+      AND l.dedup_key != ''
+      AND EXISTS (
+        SELECT 1 FROM leads c
+        WHERE c.dedup_key                       = l.dedup_key
+          AND COALESCE(c.destinasi, '')          = COALESCE(l.destinasi, '')
+          AND COALESCE(c.product_type, '')       = COALESCE(l.product_type, '')
+          AND c.is_closed                        = TRUE
+          AND c.is_duplicate                     = FALSE
+          AND c.dedup_key                       != ''
+          AND c.id                              != l.id
           AND (
-            earlier.lead_date < l.lead_date
-            OR (earlier.lead_date = l.lead_date AND earlier.external_id < l.external_id)
+            c.lead_date < l.lead_date
+            OR (c.lead_date = l.lead_date AND c.external_id < l.external_id)
           )
-          AND earlier.id != l.id
+      )
+  `;
+
+  // 4. Among remaining open records, keep earliest per phone; rest = duplicate
+  await sql`
+    UPDATE leads l
+    SET is_duplicate = TRUE, updated_at = NOW()
+    WHERE l.is_duplicate = FALSE
+      AND NOT l.is_closed
+      AND l.dedup_key != ''
+      AND EXISTS (
+        SELECT 1 FROM leads c
+        WHERE c.dedup_key   = l.dedup_key
+          AND NOT c.is_closed
+          AND c.is_duplicate = FALSE
+          AND c.dedup_key   != ''
+          AND c.id          != l.id
+          AND (
+            c.lead_date < l.lead_date
+            OR (c.lead_date = l.lead_date AND c.external_id < l.external_id)
+          )
+      )
+  `;
+
+  // 5. Update lead_date on all canonical records to the MIN lead_date for that phone.
+  //    This ensures lead_date = first ever inquiry, even if a closed record is kept.
+  await sql`
+    UPDATE leads l
+    SET lead_date  = sub.min_lead_date,
+        updated_at = NOW()
+    FROM (
+      SELECT dedup_key, MIN(lead_date) AS min_lead_date
+      FROM leads
+      WHERE dedup_key != ''
+      GROUP BY dedup_key
+    ) sub
+    WHERE l.dedup_key      = sub.dedup_key
+      AND l.is_duplicate   = FALSE
+      AND l.lead_date     != sub.min_lead_date
+  `;
+
+  // Reset: un-mark any records incorrectly flagged (safety pass for incremental syncs)
+  await sql`
+    UPDATE leads l
+    SET is_duplicate = FALSE, updated_at = NOW()
+    WHERE l.is_duplicate = TRUE
+      AND l.dedup_key   != ''
+      AND LOWER(l.status) != 'cancelled'
+      AND NOT EXISTS (
+        -- Should remain duplicate only if a better canonical exists
+        SELECT 1 FROM leads c
+        WHERE c.dedup_key                       = l.dedup_key
+          AND COALESCE(c.destinasi, '')          = COALESCE(l.destinasi, '')
+          AND COALESCE(c.product_type, '')       = COALESCE(l.product_type, '')
+          AND c.is_duplicate                     = FALSE
+          AND c.id                              != l.id
+          AND LOWER(c.status)                   != 'cancelled'
       )
   `;
 }
@@ -140,9 +234,10 @@ export async function syncCrm(fullSync = false): Promise<SyncResult> {
   const lastSync = fullSync ? null : await getLastSyncTime();
 
   // Fetch from MySQL — incremental (since last sync) or full
+  // Use `timestamp` column (confirmed field name for lead creation date)
   const query = lastSync
-    ? `SELECT * FROM attcrm.Fresh WHERE updated_at > ? ORDER BY updated_at ASC`
-    : `SELECT * FROM attcrm.Fresh ORDER BY created_at ASC`;
+    ? `SELECT * FROM attcrm.Fresh WHERE timestamp > ? ORDER BY timestamp ASC`
+    : `SELECT * FROM attcrm.Fresh ORDER BY timestamp ASC`;
 
   const [rows] = lastSync
     ? await crmDb.execute(query, [lastSync])

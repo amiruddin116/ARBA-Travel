@@ -1,13 +1,21 @@
 /**
  * KPI query functions — CPL, CPP, CR%, Average Pax.
  *
- * All lead counts exclude duplicates (WHERE NOT is_duplicate).
- * "Closed" = is_closed = TRUE (mapped from Status IN ('Modified', 'Payment', 'Closed')).
- * pax_count = adult + child + child_no_bed (infant excluded — handled at transform time).
+ * Dedup rules (enforced in sync.ts markDuplicates):
+ *   - No phone (dedup_key='') → excluded
+ *   - Cancelled → excluded
+ *   - Per (phone + destinasi + product_type): closed record takes priority over open
+ *   - lead_date = first ever inquiry date for that phone (MIN across all records)
  *
- * CPL  = total ad spend / total leads
- * CPP  = total ad spend / total closed pax
- * CR%  = closed leads / leads × 100
+ * Counting:
+ *   - Unique leads (CPL denominator) = COUNT(DISTINCT dedup_key) WHERE NOT is_duplicate
+ *     → 1 person = 1 lead, even if they booked 2 different trips
+ *   - Closed leads / pax = COUNT/SUM WHERE is_closed AND NOT is_duplicate
+ *     → same person with 2 different trips = 2 closed rows, both counted for pax/CPP
+ *
+ * CPL     = total ad spend / unique leads
+ * CPP     = total ad spend / total closed pax
+ * CR%     = closed leads / unique leads × 100
  * Avg Pax = closed pax / closed leads
  */
 
@@ -53,8 +61,10 @@ export async function getLeadKpis(filters: KpiFilters = {}): Promise<LeadKpis> {
   const [leadRows, spendRows] = await Promise.all([
     sql<{ leads: string; closed_leads: string; closed_pax: string }[]>`
       SELECT
-        COUNT(*)                              AS leads,
-        COUNT(*) FILTER (WHERE is_closed)     AS closed_leads,
+        -- Unique people (1 person = 1 lead regardless of how many products)
+        COUNT(DISTINCT dedup_key)              AS leads,
+        -- Closed bookings (same person, different trip = 2 rows, both counted)
+        COUNT(*) FILTER (WHERE is_closed)      AS closed_leads,
         COALESCE(SUM(pax_count) FILTER (WHERE is_closed), 0) AS closed_pax
       FROM leads
       ${sql.unsafe(lw)}
@@ -137,10 +147,10 @@ export async function getChannelBreakdown(filters: KpiFilters = {}): Promise<Cha
   const [leadRows, spendRows] = await Promise.all([
     sql<{ channel: string; leads: string; closed_leads: string; closed_pax: string }[]>`
       SELECT
-        COALESCE(channel, 'unattributed')             AS channel,
-        COUNT(*)                                       AS leads,
-        COUNT(*) FILTER (WHERE is_closed)              AS closed_leads,
-        COALESCE(SUM(pax_count) FILTER (WHERE is_closed), 0) AS closed_pax
+        COALESCE(channel, 'unattributed')                    AS channel,
+        COUNT(DISTINCT dedup_key)                             AS leads,
+        COUNT(*) FILTER (WHERE is_closed)                     AS closed_leads,
+        COALESCE(SUM(pax_count) FILTER (WHERE is_closed), 0)  AS closed_pax
       FROM leads
       ${sql.unsafe(lw)}
       GROUP BY channel
