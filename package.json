@@ -10,7 +10,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "sync:crm": "tsx scripts/sync-crm.ts",
-    "sync:crm:full": "tsx scripts/sync-crm.ts --full"
+    "sync:crm:full": "tsx scripts/sync-crm.ts --full",
+    "rededup": "tsx scripts/redeup.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.1",
