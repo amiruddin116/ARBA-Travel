@@ -1,0 +1,22 @@
+# Secrets / credentials
+.session_token
+.env
+.env.local
+.env.*.local
+
+# Fetched data (may contain PII from customer conversations)
+data/transcripts/
+data/leads.jsonl
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
