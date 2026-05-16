@@ -1,18 +1,15 @@
 // Source 2 — World Cruise Centre (https://www.worldcruisecentre.com.my)
 //
-// Integration status: awaiting affiliate feed.
-// World Cruise Centre is a specialist cruise agency website with no
-// public API. To go live:
-//   1. Email enquiries@worldcruisecentre.com.my requesting an
-//      accredited-agent inventory feed or booking API.
-//   2. Once granted, replace the `search` body below with a real
-//      fetch() to process.env.WORLDCRUISECENTRE_API_URL using
-//      process.env.WORLDCRUISECENTRE_API_KEY (see .env.example).
-//   3. Map the supplier response into the CruiseOffer shape and
-//      flip `status` below to "live".
+// Runtime mode (chosen automatically based on env vars):
+//   * WORLDCRUISECENTRE_API_URL + WORLDCRUISECENTRE_API_KEY set → real API.
+//   * WORLDCRUISECENTRE_USERNAME + WORLDCRUISECENTRE_PASSWORD set →
+//     Playwright scraper in ./scrape.ts using the agent portal login.
+//   * Neither set → mock fixtures.
 
+import { readCredentials } from "../scrape/credentials"
 import { filterOffers } from "../filter"
 import type { CruiseAdapter, CruiseOffer, CruiseSearchQuery } from "../types"
+import { scrapeWorldCruiseCentre } from "./scrape"
 
 const SOURCE_ID = "worldcruisecentre" as const
 const DISPLAY_NAME = "World Cruise Centre"
@@ -84,15 +81,27 @@ const MOCK_OFFERS: readonly Omit<CruiseOffer, "retrievedAt">[] = [
   },
 ]
 
-async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+function mockSearch(query: CruiseSearchQuery): CruiseOffer[] {
   const now = new Date().toISOString()
   const offers = MOCK_OFFERS.map((o) => ({ ...o, retrievedAt: now }))
   return filterOffers(offers, query)
 }
 
+async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+  const credentials = readCredentials(SOURCE_ID)
+  if (!credentials) return mockSearch(query)
+  return scrapeWorldCruiseCentre(query, credentials)
+}
+
+function resolveStatus(): CruiseAdapter["status"] {
+  return readCredentials(SOURCE_ID) ? "scraping" : "mock"
+}
+
 export const worldCruiseCentreAdapter: CruiseAdapter = {
   id: SOURCE_ID,
   displayName: DISPLAY_NAME,
-  status: "awaiting-api-access",
+  get status() {
+    return resolveStatus()
+  },
   search,
 }

@@ -1,17 +1,15 @@
 // Source 3 — Hwajing on Cruqo (https://hwajing.cruqo.com/cruise)
 //
-// Integration status: awaiting API access.
-// Hwajing operates on the Cruqo cruise reservation platform. To go live:
-//   1. Contact Hwajing (or the Cruqo platform operator) and request a
-//      partner API key for inventory search and booking.
-//   2. Once granted, replace the `search` body below with a real
-//      fetch() to process.env.HWAJING_API_URL using
-//      process.env.HWAJING_API_KEY (see .env.example).
-//   3. Map the supplier response into the CruiseOffer shape and
-//      flip `status` below to "live".
+// Runtime mode (chosen automatically based on env vars):
+//   * HWAJING_API_URL + HWAJING_API_KEY set → real API.
+//   * HWAJING_USERNAME + HWAJING_PASSWORD set → Playwright scraper in
+//     ./scrape.ts using the agent portal login.
+//   * Neither set → mock fixtures.
 
+import { readCredentials } from "../scrape/credentials"
 import { filterOffers } from "../filter"
 import type { CruiseAdapter, CruiseOffer, CruiseSearchQuery } from "../types"
+import { scrapeHwajing } from "./scrape"
 
 const SOURCE_ID = "hwajing" as const
 const DISPLAY_NAME = "Hwajing (Cruqo)"
@@ -82,15 +80,27 @@ const MOCK_OFFERS: readonly Omit<CruiseOffer, "retrievedAt">[] = [
   },
 ]
 
-async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+function mockSearch(query: CruiseSearchQuery): CruiseOffer[] {
   const now = new Date().toISOString()
   const offers = MOCK_OFFERS.map((o) => ({ ...o, retrievedAt: now }))
   return filterOffers(offers, query)
 }
 
+async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+  const credentials = readCredentials(SOURCE_ID)
+  if (!credentials) return mockSearch(query)
+  return scrapeHwajing(query, credentials)
+}
+
+function resolveStatus(): CruiseAdapter["status"] {
+  return readCredentials(SOURCE_ID) ? "scraping" : "mock"
+}
+
 export const hwajingAdapter: CruiseAdapter = {
   id: SOURCE_ID,
   displayName: DISPLAY_NAME,
-  status: "awaiting-api-access",
+  get status() {
+    return resolveStatus()
+  },
   search,
 }

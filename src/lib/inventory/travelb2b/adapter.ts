@@ -1,18 +1,17 @@
 // Source 1 — TravelB2B Malaysia (https://www.travelb2b.my)
 //
-// Integration status: awaiting-api-access.
-// TravelB2B exposes a login portal but no public API. The supplier ToS
-// prohibits scraping. To go live:
-//   1. Email partners@travelb2b.my requesting an XML/JSON cruise feed
-//      or affiliate data export.
-//   2. Once granted, replace the `search` body below with a real
-//      fetch() to process.env.TRAVELB2B_API_URL using
-//      process.env.TRAVELB2B_API_KEY (see .env.example).
-//   3. Map the supplier response into the CruiseOffer shape exported
-//      from ../types.ts and flip `status` below to "live".
+// Runtime mode (chosen automatically based on env vars):
+//   * TRAVELB2B_API_URL + TRAVELB2B_API_KEY set → call real API (not yet
+//     available; preferred long-term path).
+//   * TRAVELB2B_USERNAME + TRAVELB2B_PASSWORD set → run the Playwright
+//     scraper in ./scrape.ts using the agent portal login.
+//   * Neither set → return mock fixtures so the rest of the app keeps
+//     working without credentials.
 
+import { readCredentials } from "../scrape/credentials"
 import { filterOffers } from "../filter"
 import type { CruiseAdapter, CruiseOffer, CruiseSearchQuery } from "../types"
+import { scrapeTravelB2B } from "./scrape"
 
 const SOURCE_ID = "travelb2b" as const
 const DISPLAY_NAME = "TravelB2B Malaysia"
@@ -83,15 +82,27 @@ const MOCK_OFFERS: readonly Omit<CruiseOffer, "retrievedAt">[] = [
   },
 ]
 
-async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+function mockSearch(query: CruiseSearchQuery): CruiseOffer[] {
   const now = new Date().toISOString()
   const offers = MOCK_OFFERS.map((o) => ({ ...o, retrievedAt: now }))
   return filterOffers(offers, query)
 }
 
+async function search(query: CruiseSearchQuery): Promise<CruiseOffer[]> {
+  const credentials = readCredentials(SOURCE_ID)
+  if (!credentials) return mockSearch(query)
+  return scrapeTravelB2B(query, credentials)
+}
+
+function resolveStatus(): CruiseAdapter["status"] {
+  return readCredentials(SOURCE_ID) ? "scraping" : "mock"
+}
+
 export const travelB2BAdapter: CruiseAdapter = {
   id: SOURCE_ID,
   displayName: DISPLAY_NAME,
-  status: "awaiting-api-access",
+  get status() {
+    return resolveStatus()
+  },
   search,
 }

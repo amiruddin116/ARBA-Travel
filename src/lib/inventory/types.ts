@@ -2,6 +2,7 @@ export type SourceId = "travelb2b" | "worldcruisecentre" | "hwajing"
 
 export type AdapterStatus =
   | "live"
+  | "scraping"
   | "awaiting-api-access"
   | "awaiting-credentials"
   | "mock"
