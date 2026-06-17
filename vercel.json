@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync/google-ads",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/sync/meta",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/sync/tiktok",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/sync/search-console",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
