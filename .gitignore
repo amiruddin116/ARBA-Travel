@@ -1,0 +1,15 @@
+# Environment / secrets — never commit
+.env
+.env.local
+*.pem
+*service-account*.json
+*-sa.json
+
+# Sync cursor for the incremental sales-raw update
+scripts/.depart_sync_state.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
