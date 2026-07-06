@@ -50,6 +50,28 @@ python3 scripts/sync_depart_dashboard.py
 
 Prints the number of rows written on success.
 
+## Run via GitHub Actions
+
+`.github/workflows/sales-raw-sync.yml` runs either sync on demand (Actions tab
+→ *Sales Raw Data Sync* → **Run workflow** → pick `full` or `update`).
+
+Because the warehouse is only reachable over the ARBA VPN, the job targets a
+**self-hosted runner** labelled `arba-vpn` — register one on a VPN-connected
+machine. Configure these repository secrets
+(Settings → Secrets and variables → Actions):
+
+| Secret | Required |
+| --- | --- |
+| `WAREHOUSE_DB`, `WAREHOUSE_USER`, `WAREHOUSE_PASSWORD` | yes |
+| `GOOGLE_SA_JSON` | yes — paste the **full** service-account key JSON |
+| `WAREHOUSE_HOST`, `WAREHOUSE_PORT` | optional (defaults apply) |
+
+The workflow writes the SA key to a temp file for the run and deletes it
+afterward, and persists the incremental cursor between runs via the Actions
+cache. The daily incremental sync remains handled by the Apps Script
+`gsheet_depart_sync.js`; this workflow is for on-demand full resyncs (and
+manual `update` runs).
+
 ## Output columns (17)
 
 `timestamp, leadID, closed_time, tc, status, Destination, type, Pax,

@@ -1,0 +1,96 @@
+name: Sales Raw Data Sync
+
+# Manually-triggered sync of closed-lead raw data from the ARBA warehouse into
+# the "Raw" sheet of the Sales Raw Data 2022-2027 Google Sheet.
+#
+# Runs on a SELF-HOSTED runner (label: arba-vpn) because the warehouse
+# (crm.arbatravel.com:3306) is only reachable over the ARBA VPN — GitHub-hosted
+# runners cannot reach it. Register a self-hosted runner on a machine/network
+# with VPN access and give it the `arba-vpn` label.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   WAREHOUSE_DB          MySQL database name
+#   WAREHOUSE_USER        MySQL user
+#   WAREHOUSE_PASSWORD    MySQL password
+#   GOOGLE_SA_JSON        full JSON of a Google service-account key with Editor
+#                         access to the target spreadsheet
+# Optional:
+#   WAREHOUSE_HOST        (defaults to crm.arbatravel.com)
+#   WAREHOUSE_PORT        (defaults to 3306)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: "Which sync to run"
+        type: choice
+        required: true
+        default: full
+        options:
+          - full
+          - update
+
+concurrency:
+  # Never let two sync runs write the sheet at the same time.
+  group: sales-raw-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, arba-vpn]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      # The incremental update reads/writes scripts/.depart_sync_state.json.
+      # Restore it so `update` runs pick up where the last run left off.
+      # (The `full` sync ignores any restored cursor and writes a fresh one.)
+      - name: Restore sync cursor
+        uses: actions/cache/restore@v4
+        with:
+          path: scripts/.depart_sync_state.json
+          key: depart-sync-state-${{ github.run_id }}
+          restore-keys: |
+            depart-sync-state-
+
+      - name: Write Google service-account key
+        env:
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+        run: |
+          printf '%s' "$GOOGLE_SA_JSON" > "$RUNNER_TEMP/sa.json"
+
+      - name: Run sync (${{ inputs.sync_type }})
+        env:
+          WAREHOUSE_HOST: ${{ secrets.WAREHOUSE_HOST }}
+          WAREHOUSE_PORT: ${{ secrets.WAREHOUSE_PORT }}
+          WAREHOUSE_DB: ${{ secrets.WAREHOUSE_DB }}
+          WAREHOUSE_USER: ${{ secrets.WAREHOUSE_USER }}
+          WAREHOUSE_PASSWORD: ${{ secrets.WAREHOUSE_PASSWORD }}
+          GOOGLE_SA_JSON: ${{ runner.temp }}/sa.json
+        run: |
+          if [ "${{ inputs.sync_type }}" = "update" ]; then
+            python3 scripts/sync_depart_update.py
+          else
+            python3 scripts/sync_depart_dashboard.py
+          fi
+
+      # Persist the updated cursor for the next run.
+      - name: Save sync cursor
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: scripts/.depart_sync_state.json
+          key: depart-sync-state-${{ github.run_id }}
+
+      - name: Remove service-account key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
