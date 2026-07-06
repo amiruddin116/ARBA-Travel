@@ -7,7 +7,11 @@ into the **"Raw"** sheet of the Google Sheet *Sales Raw Data 2022-2027*
 | Script | Skill | What it does |
 | --- | --- | --- |
 | `sync_depart_dashboard.py` | `/sales-raw-full` | Clears the sheet and reloads **all** ~20K closed leads. |
-| `sync_depart_update.py` *(not yet written)* | `/sales-raw-update` | Incremental delta since last sync. |
+| `sync_depart_update.py` | `/sales-raw-update` | Incremental delta since last sync (updated / added / removed). |
+| `depart_common.py` | — | Shared helpers (warehouse, transform, Sheets I/O, cursor). |
+
+The incremental update requires the full sync to have run at least once — the
+full sync records the starting cursor in `scripts/.depart_sync_state.json`.
 
 The daily cron is handled separately by the Google Apps Script
 `gsheet_depart_sync.js`; these scripts are for on-demand full/manual syncs.
@@ -59,9 +63,11 @@ Amount, tripid`
 
 ## ⚠️ Verify the warehouse schema before first run
 
-The SQL in `sync_depart_dashboard.py` (constant `QUERY`) is written against a
-`leads` table with best-guess column names (`l.timestamp`, `l.closed_time`,
-`l.tc`, `l.destination`, `l.adult`, `l.child`, `l.childnb`, `l.amount`,
-`l.tripid`, …). Confirm the real table and column names against the live
-warehouse and adjust the identifiers if they differ — the transform logic
-(Pax sum, Month/Year derivation, sort, sheet layout) needs no changes.
+The SQL in `depart_common.py` (`BASE_SELECT` / `FULL_QUERY` / `UPDATE_QUERY`)
+is written against a `leads` table with best-guess column names (`l.timestamp`,
+`l.closed_time`, `l.tc`, `l.destination`, `l.adult`, `l.child`, `l.childnb`,
+`l.amount`, `l.tripid`, `l.last_modified_time`, …). Confirm the real table and
+column names against the live warehouse and adjust the identifiers if they
+differ — the transform logic (Pax sum, Month/Year derivation, sort, sheet
+layout, reconcile) needs no changes. In particular the incremental update
+relies on a `last_modified_time` column being bumped whenever a lead changes.
