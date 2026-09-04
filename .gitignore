@@ -1,0 +1,9 @@
+
+# sales-raw sync cursor + secrets
+scripts/.depart_sync_state.json
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
