@@ -1,0 +1,306 @@
+<title>ARBA YEP 2026 Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: single reading column (max 960px) — boarding-pass style target strip up top, then numbered plan sections that mirror the real decision order */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#14202b; --muted:#5a6b7a; --line:#dbe1e7;
+  --accent:#0f6b5c; --accent-soft:#e2f1ee; --warn:#a15c00; --warn-soft:#fbefdc; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#16212b; --fg:#e6edf3; --muted:#9aabba; --line:#2a3946;
+  --accent:#4fc3a9; --accent-soft:#163a34; --warn:#f0a94a; --warn-soft:#3a2c14; --bad:#f2837a; --bad-soft:#3d1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#16212b; --fg:#e6edf3; --muted:#9aabba; --line:#2a3946;
+  --accent:#4fc3a9; --accent-soft:#163a34; --warn:#f0a94a; --warn-soft:#3a2c14; --bad:#f2837a; --bad-soft:#3d1c1a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,5vw,42px);font-weight:800}
+h2{font-size:24px;font-weight:800;display:flex;gap:12px;align-items:baseline}
+h2 .n{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:600}
+h3{font-size:17px;font-weight:600;margin-top:8px}
+p{margin:0;max-width:68ch}
+section{display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;color:var(--muted);max-width:68ch}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.strip>div{padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.strip>div+div{border-left:1px dashed var(--line)}
+.strip .lab{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.strip .val{font-family:var(--display);font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.strip .sub{font-size:14px;color:var(--muted)}
+.strip .commit{background:var(--accent-soft)}
+.strip .commit .val{color:var(--accent)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hl td{background:var(--accent-soft);font-weight:700}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.callout{border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.callout.warn{background:var(--warn-soft)} .callout.bad{background:var(--bad-soft)} .callout.ok{background:var(--accent-soft)}
+.callout b.t{font-family:var(--display);font-size:16px}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.h{background:var(--accent-soft);color:var(--accent)} .pill.m{background:var(--warn-soft);color:var(--warn)} .pill.l{background:var(--bad-soft);color:var(--bad)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card h3{margin:0}
+.week{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600}
+.small{font-size:13.5px;color:var(--muted)}
+code{font-family:var(--mono);font-size:.9em}
+@media (max-width:640px){.strip{grid-template-columns:1fr}.strip>div+div{border-left:0;border-top:1px dashed var(--line)}.grid2{grid-template-columns:1fr}}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:12px">
+  <span class="eyebrow">ARBA Travel · Year End Promo · 24/11 – 4/12/2026 · 11 days</span>
+  <h1>YEP 2026: commit RM10.1M</h1>
+  <p class="lede">Targets per segment, growth levers and a week-by-week plan. Built from CRM sales (to 17/10/2026), promo history since 2022, SleekFlow leads and WIGS 2027, then checked by three independent reviewers.</p>
+  <div class="strip" role="group" aria-label="YEP 2026 targets">
+    <div><span class="lab">Floor · must hit</span><span class="val">RM7.65M</span><span class="sub">1,479 pax · +17% vs YES 24</span></div>
+    <div class="commit"><span class="lab">Commit · recommended</span><span class="val">RM10.1M</span><span class="sub">1,975 pax · 2.0x YES 25 · ~50–55% likely</span></div>
+    <div><span class="lab">Stretch</span><span class="val">RM13.15M</span><span class="sub">2,602 pax · bonus kicker at RM11.5M</span></div>
+  </div>
+  <p class="small"><b>How it is measured:</b> CRM revenue with closed_time 24/11–4/12/2026, all statuses (Closed, Modified, Payment). Promo Performance Tracking counts late entries and runs 0–21% higher, so RM10.1M CRM ≈ RM10.1–12.2M on that sheet.</p>
+</header>
+
+<section>
+  <h2><span class="n">01</span>What you need to know</h2>
+  <ol>
+    <li><b>Your normal sales are now as big as last year's promo.</b> Ordinary October days sell RM336–364k/day of JT, the same as YES 25's promo rate (RM333k/day). Without any promo, these 11 days would bring in about <b>RM4.3–4.8M JT</b>. The promo only counts if it adds on top of that.</li>
+    <li><b>RM10.1M needs about +RM4.2M of JT on top of normal sales.</b> That is roughly what MYP 26 added, and MYP 26 is the best promo you've run outside MATTA. The RM11.5M first draft needed 17% more than that record, so it became the stretch target.</li>
+    <li><b>YEP should fill January, March and May 2027 seats, not run as a generic sale.</b> Jan–Apr seats are projected to be ~68% full. January is at 53%, March at 48% and May at 61%. Discounts, creative and TC incentives go to those departures. April is already on track.</li>
+    <li><b>Your bottleneck is how many deals the team can close, not leads or seats.</b> The commit means about 55 closings a day, 7% above MYP 26's record. You need 16–20 people selling JT plus the online booking bot ("Robot1"). YES 25 ran with only 11 JT sellers and fell 25%.</li>
+    <li><b>PT is shrinking:</b> −46% revenue in October, and 2027 PT bookings are down 30%. The PT target only holds the trend. Fixing PT is a product job.</li>
+    <li><b>WIGS 2027 GT (44,414 pax) is not reachable as written.</b> It needs 2.39x growth vs 2026, and your history is 1.54–1.61x a year. The realistic commit is about <b>36k</b>, with 44.4k as stretch. Plan airline deposits to 36k.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Targets by segment</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Segment</th><th class="num">Floor</th><th class="num">Commit</th><th class="num">Stretch</th><th class="num">Commit pax</th><th class="num">ARPP</th><th class="num">Closed leads</th><th>Basis</th></tr></thead>
+    <tbody>
+      <tr><td><b>JT / GT</b></td><td class="num">RM7.00M</td><td class="num"><b>RM9.00M</b></td><td class="num">RM11.50M</td><td class="num">1,585</td><td class="num">5,680</td><td class="num">511</td><td>RM4.78M normal sales + RM4.2M from the promo (≈ MYP 26 record)</td></tr>
+      <tr><td><b>PT</b></td><td class="num">RM0.45M</td><td class="num"><b>RM0.65M</b></td><td class="num">RM0.90M</td><td class="num">265</td><td class="num">2,450</td><td class="num">58</td><td>RM0.34M normal sales (trend-corrected) + 0.2–0.3M historical PT lift. −29% vs YES 25, matching the trend</td></tr>
+      <tr><td><b>UH-GT</b></td><td class="num">RM0.10M</td><td class="num"><b>RM0.22M</b></td><td class="num">RM0.40M</td><td class="num">20</td><td class="num">11,000</td><td class="num">10</td><td>Bottom-up (MYP 26 sold 31 pax). Raise to 30 pax only if Ramadan-2027 blocks confirmed by 31/10</td></tr>
+      <tr><td>Other (CT/ST/BT/IT)</td><td class="num">RM0.10M</td><td class="num">RM0.20M</td><td class="num">RM0.35M</td><td class="num">105</td><td class="num">–</td><td class="num">29</td><td>Report only; corporate deals are lumpy</td></tr>
+      <tr class="hl"><td>Total</td><td class="num">RM7.65M</td><td class="num">RM10.07M</td><td class="num">RM13.15M</td><td class="num">1,975</td><td class="num">–</td><td class="num">608</td><td>Leads needed 3,900–5,100 (355–460/day)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Against history (same CRM basis)</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Promo</th><th class="num">JT/day normally</th><th class="num">JT/day in promo</th><th class="num">JT added by promo</th><th class="num">PT added by promo</th></tr></thead>
+    <tbody>
+      <tr><td>MYP 25</td><td class="num">147k</td><td class="num">228k</td><td class="num">RM0.81M</td><td class="num">RM0.38M</td></tr>
+      <tr><td>YES 25 (8–19/12/25)</td><td class="num">197k</td><td class="num">333k</td><td class="num">RM1.63M</td><td class="num">RM0.20M</td></tr>
+      <tr><td>PRE MF 9/26</td><td class="num">309k</td><td class="num">563k</td><td class="num">RM2.29M</td><td class="num">−RM0.10M</td></tr>
+      <tr><td>YES 24 (19–29/12/24)</td><td class="num">135k</td><td class="num">452k</td><td class="num">RM3.49M</td><td class="num">RM0.71M</td></tr>
+      <tr><td>MYP 26 (record)</td><td class="num">207k</td><td class="num">614k</td><td class="num">RM4.47M</td><td class="num">RM0.31M</td></tr>
+      <tr class="hl"><td>YEP 26 commit</td><td class="num">≈434k</td><td class="num">≈818k</td><td class="num">≈RM4.2M</td><td class="num">≈RM0.31M</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><b class="t">Commit only if these three are true; otherwise cut to floor</b>
+    <ul><li>At least 20 people selling JT (surge staff included) are confirmed for 24/11–4/12 by 9/11.</li><li>Discount prices for the Jan/Mar/May 2027 hero departures are set by 1/11.</li><li>SleekFlow DB access is working by week 2.</li></ul>
+  </div>
+  <h3>Daily pace checkpoints (cumulative CRM revenue)</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Checkpoint</th><th class="num">Floor</th><th class="num">Commit</th><th class="num">Stretch</th></tr></thead>
+    <tbody>
+      <tr><td>End D3 · Thu 26/11</td><td class="num">1.30M</td><td class="num">1.71M</td><td class="num">2.24M</td></tr>
+      <tr><td>End D5 · Sat 28/11 (decision point)</td><td class="num">2.25M</td><td class="num">2.96M</td><td class="num">3.87M</td></tr>
+      <tr><td>End D8 · Tue 1/12</td><td class="num">3.67M</td><td class="num">4.83M</td><td class="num">6.31M</td></tr>
+      <tr><td>End D11 · Fri 4/12</td><td class="num">7.65M</td><td class="num">10.07M</td><td class="num">13.15M</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">The pace curve follows the shape of YES 24, YES 25 and MYP 26: about 17% of sales in the first 3 days and 52% in the last 3. No promo has run in late November before, so only the D5 checkpoint should trigger extra spend.</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>How YEP feeds WIGS 2027</h2>
+  <div class="grid2">
+    <div class="card"><h3>GT pax for 2027 departures</h3>
+      <div class="tw" style="border:0"><table>
+        <tbody>
+          <tr><td>Already booked (17/10/2026)</td><td class="num">4,674</td></tr>
+          <tr><td>+ normal sales 18/10–23/11</td><td class="num">1,604</td></tr>
+          <tr><td>+ YEP commit (95% depart 2027)</td><td class="num">1,505</td></tr>
+          <tr><td>+ normal sales 5–31/12</td><td class="num">1,392</td></tr>
+          <tr class="hl"><td>Booked by 31/12/2026</td><td class="num">9,175</td></tr>
+          <tr><td>WIGS GT commit</td><td class="num">44,414</td></tr>
+          <tr><td>Projected 2027 final</td><td class="num">29.2–35.6k (66–80%)</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card"><h3>Seats, Jan–May 2027 (projected fill)</h3>
+      <div class="tw" style="border:0"><table>
+        <thead><tr><th>Month</th><th class="num">Booked</th><th class="num">Projected</th><th class="num">Seats</th><th class="num">Fill</th></tr></thead>
+        <tbody>
+          <tr><td>Jan</td><td class="num">1,174</td><td class="num">≈2,150</td><td class="num">4,042</td><td class="num"><span class="pill l">53%</span></td></tr>
+          <tr><td>Feb</td><td class="num">–</td><td class="num">≈35</td><td class="num">262</td><td class="num"><span class="pill l">13%</span></td></tr>
+          <tr><td>Mar</td><td class="num">429</td><td class="num">≈2,040</td><td class="num">4,214</td><td class="num"><span class="pill l">48%</span></td></tr>
+          <tr><td>Apr</td><td class="num">1,145</td><td class="num">≈4,550</td><td class="num">4,426</td><td class="num"><span class="pill h">≈103%</span></td></tr>
+          <tr><td>May</td><td class="num">558</td><td class="num">≈3,540</td><td class="num">5,822</td><td class="num"><span class="pill m">61%</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <ul>
+    <li><b>YEP alone delivers about 3.4% of the WIGS GT commit.</b> Being on track at 31/12 would need 12.0–13.9k pax booked; no YEP can do that (it would need 2–3x MF 9/26).</li>
+    <li><b>Departures that need filling:</b> Turki Mar (45 of 552 seats) and May (64/768), Switzerland-Italy Mar (15/300), Seoul Mar (36/440) and May (29/640). <b>Departures to stop selling:</b> Seoul Jan (74% sold), Uzbekistan Apr, Kazakhstan Apr, Hokkaido Jan.</li>
+    <li><b>Later promos must close the rest:</b> a <b>new Jan 2027 promo</b> (~7k pax; decide by 1/12), MF 4/27 (~6k), MYP 27 (~4.9k), MF 9/27 (~4.8k). Each needs about 2.5x its 2026 equivalent.</li>
+    <li><b>WIGS fixes:</b> re-forecast GT to ≈36k and PT to ≈5k (vs 8,369), and add a UH line (≈200–300 pax). WIGS has no umrah target today.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Growth levers, ranked by RM impact</h2>
+  <p>With no extra levers, a YES 25-sized promo on today's base gives about <b>RM7.15M</b>. The commit needs <b>+RM2.9M</b> more. Realistically the levers add +RM2.0–4.0M; several overlap because they convert the same leads.</p>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Lever</th><th>Seg.</th><th class="num">RM, 11 days</th><th>Confidence</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Discount by departure date to fill seats</b> for Jan/Mar/May 2027 hero departures (Turki, Eropah 6, Kunming-ShangriLa, Switz-Italy, Seoul, Balkan, TKO). Deepest discount on the emptiest dates; stop selling near-full ones</td><td>JT</td><td class="num">+0.6–1.2M</td><td><span class="pill m">Medium</span></td><td>Syahmi</td></tr>
+      <tr><td>2</td><td><b>Hard deadline, no POST promo, 72-hour final call</b> (2–4/12, open till 23:59). YES 24 with a hard close did 59.7% of sales in the last 3 days; YES 25, followed by a POST promo, did 47.6%</td><td>All</td><td class="num">+0.5–0.9M</td><td><span class="pill h">High</span></td><td>Hussaini, Amir</td></tr>
+      <tr><td>3</td><td><b>Surge capacity:</b> 6–8 extra sales staff, more Robot1 capacity, weekend/evening rota (YES 25 weekend sales were only 0.53x weekdays)</td><td>JT, PT</td><td class="num">+0.4–0.9M</td><td><span class="pill m">Medium</span></td><td>Hussaini, Rahiim</td></tr>
+      <tr><td>4</td><td><b>Re-activate past enquiries</b> from MF 9/26, PRE MF and MYP 26 (minus people who booked), plus past travellers</td><td>JT, UH</td><td class="num">+0.5–1.0M</td><td><span class="pill m">Medium</span></td><td>Amir, Hussaini</td></tr>
+      <tr><td>5</td><td><b>New-for-2027 destinations as headline</b> (Chengdu 2→92 pax, Hanoi 40→96, Kazakhstan, Uzbekistan, Spain-Morocco-Portugal, Hokkaido)</td><td>JT</td><td class="num">+0.4–0.8M</td><td><span class="pill l">Med-low</span></td><td>Syahmi, Amir</td></tr>
+      <tr><td>6</td><td><b>Ask-for-sale discipline:</b> send price, deadline and payment link the same day; tag every lead "AFS sent". Today 30.5% of leads get asked and 20.8% of those close</td><td>All</td><td class="num">directional</td><td><span class="pill l">Low data</span></td><td>Hussaini</td></tr>
+      <tr><td>7</td><td><b>Speed-to-lead rule:</b> first reply under 15 min; PT itinerary under 1 hour. 12 of 17 lost leads were lost for reasons TCs control, e.g. "TC lambat respon"</td><td>All</td><td class="num">not sized</td><td><span class="pill l">Needs DB</span></td><td>Rahiim</td></tr>
+      <tr><td>8</td><td>Low deposit / instalments + "best price until MATTA 2027" guarantee</td><td>JT, UH</td><td class="num">+0.2–0.5M</td><td><span class="pill l">Margin risk</span></td><td>Amir</td></tr>
+      <tr><td>9</td><td>Push premium packages and add-ons (long-haul, single supplement, insurance)</td><td>JT</td><td class="num">+0.2–0.5M</td><td><span class="pill m">Medium</span></td><td>Syahmi, Hussaini</td></tr>
+      <tr><td>10</td><td>Ramadan / June 2027 umrah seat blocks, one named TC (Zaid), landing page</td><td>UH</td><td class="num">+0.1–0.3M</td><td><span class="pill l">Med-low</span></td><td>Syahmi</td></tr>
+      <tr><td>11</td><td>Private version of each hero JT (6+ pax, fixed price). 78% of PT revenue is in destinations that also run as JT</td><td>PT</td><td class="num">+0.15–0.35M</td><td><span class="pill l">Med-low</span></td><td>Syahmi</td></tr>
+      <tr><td>12</td><td>Long-haul fixed-price PT packages + 6–10 pre-priced PT templates (MF Online PT fell from RM0.60M to RM0.08M)</td><td>PT</td><td class="num">+0.2–0.5M</td><td><span class="pill l">Med-low</span></td><td>Syahmi, Amir</td></tr>
+      <tr><td>13</td><td>Cap new leads at 25 per TC per day. Close rate drops 1.06pp for every +10 leads a week</td><td>JT</td><td class="num">+0.06–0.19M</td><td><span class="pill m">Medium</span></td><td>Rahiim</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>What the TC data shows</h2>
+  <div class="grid2">
+    <div class="card"><h3>Findings</h3>
+      <ul>
+        <li><b>Sales are concentrated:</b> since 7/9, two CRM logins account for 60% of rows: "Ikhwan" (36.7%) and Robot1 (24.5%). The Ikhwan login logged almost nothing from May 2024 to Dec 2025, then 150–280 rows a month in 2026. Check whether it is one person or a shared entry login.</li>
+        <li><b>Too few sellers at YES 25:</b> it ran with 11 JT TCs, down from 15 at YES 24, while normal daily sales had grown 46%. That explains much of the −25%.</li>
+        <li><b>The funnel leaks at the ask:</b> only 30.5% of leads get a price and deadline (Sheet7 sample).</li>
+        <li><b>UH depends on one person:</b> Zaid closed 39 of 59 UH closings.</li>
+        <li><b>The MFKL codes are fair booth logins:</b> permanent TCs logged only 1–4 rows under their own names during MF 9/26.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>What we can't see yet</h3>
+      <ul>
+        <li><b>Response time, follow-ups, ask-for-sale per TC:</b> these need the SleekFlow DB (tables <code>messages</code>, <code>conversation_daily</code>, <code>closes</code>). It was blocked here.</li>
+        <li><b>Which WhatsApp lead became which sale:</b> SleekFlow lead IDs match 0 of 23,844 CRM sale IDs. Fix by writing the SleekFlow ID into the CRM booking at closing.</li>
+        <li><b>Recent lead data:</b> the SleekFlow lead sheet stopped syncing on 13/7/2026.</li>
+        <li><b>Lead stages:</b> every lead stays "1. New", so stage data is useless.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Action plan, 19 Oct – 18 Dec</h2>
+  <p class="small">D1 = Tue 24/11 … D11 = Fri 4/12. <b>Amir names one tech lead or vendor by 21/10</b>; the first draft gave Amir 21 of 38 actions.</p>
+  <div class="grid2">
+    <div class="card"><span class="week">W1 · 19–25 Oct · Decide and lock</span><ul>
+      <li>Sign off targets, media budget, TC bonus, margin floor per departure and who can approve discounts <b>(Amir)</b></li>
+      <li>Seat audit Jan–Jun 2027: sold vs blocked; verify deposits paid and seat-release dates (all 58 rows "TBC") <b>(Syahmi, Amir)</b>. Agent: daily sold-vs-block sheet</li>
+      <li>Start negotiating staged deposits for May/Jun 2027 blocks; get umrah block quotes, go/no-go by 31/10 <b>(Syahmi)</b></li>
+      <li>SleekFlow DB access; run per-TC response-time queries <b>(Rahiim, tech lead)</b></li>
+      <li>Map MFKL codes to people; confirm what the Ikhwan login is; leave freeze 20/11–4/12; backups for Ikhwan, Robot1 owner, Zaid <b>(Hussaini)</b></li>
+    </ul></div>
+    <div class="card"><span class="week">W2 · 26 Oct – 1 Nov · Product and pricing</span><ul>
+      <li>Hero discount grid by departure date, instalments, "best price until MATTA 2027" terms; all priced by 1/11 <b>(Syahmi, Amir)</b></li>
+      <li>Visa cut-off rule for Jan 2027 Europe departures <b>(Syahmi)</b></li>
+      <li>PT: private version of each hero, 4–6 long-haul packages, 6–10 templates. Agent drafts itineraries, a human approves <b>(Syahmi)</b></li>
+      <li>Robot1 ready with YEP prices, seat caps, payment-gateway load test <b>(Amir)</b></li>
+      <li>Hire 6–8 surge staff; set up SleekFlow seats and CRM logins <b>(Hussaini, Rahiim)</b></li>
+      <li>Re-activation list; agent scores contacts and drafts WhatsApp offers <b>(Amir, Hussaini)</b></li>
+      <li>Ask-for-sale script, "AFS sent" tag, lost-reason pick-list <b>(Hussaini)</b></li>
+    </ul></div>
+    <div class="card"><span class="week">W3 · 2–8 Nov · Build</span><ul>
+      <li>Ad creative for hero departures, new destinations, umrah, private PT; agent produces A/B variants <b>(Amir)</b></li>
+      <li>SleekFlow rules-based first reply (destination, month, pax, brochure, "TC replies within 15 min"), live by 9/11 <b>(Rahiim)</b></li>
+      <li>Fix SleekFlow→sheet sync; check WhatsApp broadcast limits <b>(tech lead)</b></li>
+      <li>Stop-sell feed for TCs and Robot1: agent flags departures ≥80% sold <b>(Syahmi)</b></li>
+      <li>Separate the ops desk from the sales floor (6,555 JT pax depart Nov–Dec) <b>(Rahiim)</b></li>
+      <li>Train surge staff; test payment links end-to-end <b>(Hussaini, Rahiim)</b></li>
+    </ul></div>
+    <div class="card"><span class="week">W4–W5 · 9–23 Nov · Warm-up</span><ul>
+      <li>10/11 teaser + "YEP early access" waitlist. <b>No early-bird price</b>; it would pull the same buyers out of the YEP window <b>(Amir)</b></li>
+      <li>War-room dashboard live, refreshed hourly from CRM <b>(tech lead)</b></li>
+      <li>Lead caps and routing: JT leads to JT specialists, overflow to surge staff <b>(Rahiim)</b></li>
+      <li>Confirm ≥20 JT sellers by 9/11 <b>(Hussaini)</b></li>
+      <li>Re-activation wave 1; full rehearsal 21/11 <b>(Amir, Rahiim)</b></li>
+    </ul></div>
+    <div class="card"><span class="week">W6–W7 · 24 Nov – 4 Dec · YEP live</span><ul>
+      <li>War-room 09:30 and 17:30, chaired by Hussaini</li>
+      <li>27/11 Black Friday message: "your 2027 holiday, not a 1-day deal" <b>(Amir)</b></li>
+      <li><b>D5 (28/11):</b> below RM2.25M → +30% hero ad budget, re-activation wave 2, flash offer on emptiest departures. Above RM3.87M → stop adding discounts</li>
+      <li><b>D8 (1/12):</b> decide May/Jun deposits and the Jan 2027 promo <b>(Syahmi, Amir)</b></li>
+      <li>2–4/12 final call; automatic reminders to "AFS sent" leads. <b>Hard close Fri 4/12 23:59, no POST promo</b></li>
+    </ul></div>
+    <div class="card"><span class="week">Post · 5–18 Dec</span><ul>
+      <li>Collect balances; watch cancellations <b>(Rahiim, Amir)</b></li>
+      <li>Close rate and response time by TC; pay bonuses; agent writes the retrospective <b>(Hussaini)</b></li>
+      <li>Re-plan Jan–Jun 2027 seats; release weak blocks before release dates <b>(Syahmi)</b></li>
+      <li>Build the Jan 2027 promo; re-forecast WIGS <b>(Amir)</b></li>
+      <li>Make the CRM booking keep the SleekFlow lead ID <b>(tech lead)</b></li>
+    </ul></div>
+  </div>
+  <h3>War-room KPIs (09:30 / 17:30)</h3>
+  <ol>
+    <li>Revenue by segment vs pace curve (CRM closed_time)</li>
+    <li>Closings per day vs 55</li>
+    <li>Leads per day vs 355–460</li>
+    <li>% of first replies under 15 min</li>
+    <li>Share of JT pax departing Jan–May 2027 (target ≥55%)</li>
+    <li>Departures ≥80% sold</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Risks and data gaps</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Risk</th><th>Detail</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Normal sales overstated</td><td>47% of October JT departs in 2026; that demand fades by late Nov. At RM4.3M normal sales, the commit needs a record lift</td><td>D5 checkpoint; floor still holds</td></tr>
+      <tr><td>Promo fatigue</td><td>Sep 2026 was a record RM26.9M; YES 25 was weak after a strong MF 9/25</td><td>Target sized on RM added (≈ MYP 26), not on a multiplier</td></tr>
+      <tr><td>Concentration</td><td>Ikhwan + Robot1 = 60%; UH = Zaid</td><td>Identity check, backups, leave freeze</td></tr>
+      <tr><td>Ops overload</td><td>6,555 JT pax depart Nov–Dec</td><td>Separate ops desk</td></tr>
+      <tr><td>Margin</td><td>Discounts to fill seats + price guarantee can buy revenue at low gross (WIGS GT gross 12%)</td><td>Margin floor per departure</td></tr>
+      <tr><td>Timing</td><td>First late-November YEP; Black Friday, 12.12, school break from 4–5/12</td><td>Treat D3/D5 as soft signals</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout bad"><b class="t">Data plumbing to fix</b>
+    <ul>
+      <li>SleekFlow DB (response time, ask-for-sale, close rate for the current team): by 31/10</li>
+      <li>SleekFlow→sheet sync, dead since 13/7: by 6/11</li>
+      <li>Seat blocks vs sold, deposits actually paid, release terms: by 25/10</li>
+      <li>UH Amount = 0 on 21 of 85 UH rows; marketing spend by campaign (no cost per lead or ROAS possible today)</li>
+      <li>Lead→sale join (0 matches): after YEP</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">08</span>How this was checked</h2>
+  <p>Four analysts (baseline, WIGS bridge, TC execution, promo levers) fed one plan. Three independent reviewers then recomputed about 120 numbers from the raw files and challenged realism and feasibility. The main changes they forced:</p>
+  <ul>
+    <li><b>Commit cut from RM11.5M to RM10.1M</b> and fixed on CRM closed_time. On CRM data, the draft's JT number needed 17% more than the record promo.</li>
+    <li><b>PT cut from RM1.0M to RM0.65M.</b> The draft assumed ARPP 2,700; 2026 promos ran 1,818–2,460.</li>
+    <li><b>Leads needed cut from 9,420 to 3,900–5,100; surge staff from 25–30 to 6–8.</b> Capacity is the real constraint.</li>
+    <li><b>Jan–Apr seat fill corrected from 48–58% to ≈68%</b>, by projecting month by month.</li>
+    <li><b>Simpler automation.</b> The AI chat responder and PT quote bot became a rules-based SleekFlow flow and pre-priced templates, because there is no live price and availability feed and only 4 weeks to build.</li>
+  </ul>
+  <p class="small">Not verified: response-time effects and SleekFlow-based TC figures (DB blocked). Sources: Sales Raw Data 2022-2027 (closed to 17/10/2026), Promo Performance Tracking, Leads Sleekflow Raw Data (Sep 2025–Jul 2026), WIGS 2027. Prepared 17/10/2026.</p>
+</section>
+</main>
