@@ -1,0 +1,59 @@
+-- ============================================================================
+-- ARBA Context OS — Schema overview
+--
+-- This file is the human-readable map of the data model and security rules.
+-- The RUNNABLE source of truth is the ordered migrations in ./migrations/.
+-- Apply them in order: 0001 -> 0002 -> 0003 -> 0004.
+-- ============================================================================
+--
+-- PURPOSE
+--   A shared, permission-controlled "company brain" for ARBA. Every department
+--   contributes and owns its context (SOPs, playbooks, briefings, decisions).
+--   People and AI agents search it by meaning. Who can see what is enforced by
+--   PostgreSQL Row-Level Security — not by app code.
+--
+-- TABLES
+--   departments      Org units (Sales, Product & Supply, CX & Ops, ...).
+--   app_users        One row per person, keyed to Supabase auth.users.
+--                    Has exactly one department and one role.
+--   context_items    A unit of knowledge. Owned by a department. Flagged
+--                    `shared` or `restricted`; has a lifecycle status.
+--   context_chunks   context_items split + embedded (pgvector) for search.
+--   access_grants    Cross-department READ grants (dept->dept or dept->user).
+--   audit_log        Every read/search/write/grant. Master-only readable.
+--
+-- ROLES  (enum user_role)
+--   master     You. Sees and grants everything, incl. the restricted vault.
+--   manager    A C-level. Owns + curates one department's context; can grant
+--              other departments read access to it.
+--   builder    Staff. Create/edit SHARED context in their own department.
+--   viewer     Read-only. Can never write. Sees only what is allowed.
+--
+-- SENSITIVITY  (enum context_sensitivity)
+--   shared     Visible per the department + grant rules below.
+--   restricted The "master vault" — finance, salaries, strategy, deal terms.
+--              Visible only to master, the owning dept's manager, and grants
+--              explicitly marked can_read_restricted. Keep this set SMALL.
+--
+-- READ MATRIX (context_items) — summarized from migration 0003
+--   master                     -> every item
+--   own dept, shared           -> manager, builder, viewer of that dept
+--   own dept, restricted       -> manager of that dept (+ master)
+--   other dept, shared         -> only with a valid access_grant
+--   other dept, restricted     -> only with a grant where can_read_restricted
+--   archived                   -> master only
+--
+-- WRITE MATRIX (context_items)
+--   insert/update shared   -> master; own-dept manager; own-dept builder
+--   insert/update restricted -> master; own-dept manager  (NOT builder)
+--   delete                 -> master; own-dept manager
+--   viewer                 -> no writes, ever
+--
+-- PERMISSION-AWARE AI
+--   Function match_context(query_embedding, ...) runs as SECURITY INVOKER, so
+--   RLS filters its results. An AI agent querying on a user's behalf (with that
+--   user's JWT) can only ever retrieve context the user may see. The master
+--   vault cannot leak through an AI answer. Never run it with the service key.
+--
+-- See ./README.md for setup, and ./migrations/*.sql for the exact DDL.
+-- ============================================================================
